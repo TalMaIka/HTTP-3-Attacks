@@ -1,20 +1,24 @@
-The appearance of ICMP packets with a message like "Destination unreachable (Port unreachable)" during your PoC of the Slowloris-style DoS attack on an HTTP/3 server is likely due to the following sequence of events:
+### Analysis:
 
-Analysis:
-QUIC and Port Association: HTTP/3 relies on QUIC, which uses UDP for transport. During the attack, a large number of QUIC sessions are being initiated with Initial, Handshake, and Payload packets as part of the normal QUIC exchange.
+1. **QUIC and Port Association**:
+   HTTP/3 relies on QUIC, which uses UDP for transport. During the attack, a large number of QUIC sessions are being initiated with `Initial`, `Handshake`, and `Payload` packets as part of the normal QUIC exchange.
 
-Resource Exhaustion on the Server: Slowloris-style attacks aim to hold connections open without completing them, consuming server-side resources like memory, CPU, or sockets. This can lead to exhaustion of the server’s resources for handling new connections.
+2. **Resource Exhaustion on the Server**:
+   Slowloris-style attacks aim to hold connections open without completing them, consuming server-side resources like memory, CPU, or sockets. This can lead to exhaustion of the server’s resources for handling new connections.
 
-Server Response to Resource Unavailability: Once the server runs out of resources (e.g., it cannot accept more incoming connections or allocate resources for existing ones), it may drop packets from new incoming QUIC sessions or terminate existing ones. If the server has explicitly closed a port or is unable to process incoming packets, it may stop responding to some QUIC requests.
+3. **Server Response to Resource Unavailability**:
+   Once the server runs out of resources (e.g., it cannot accept more incoming connections or allocate resources for existing ones), it may drop packets from new incoming QUIC sessions or terminate existing ones. If the server has explicitly closed a port or is unable to process incoming packets, it may stop responding to some QUIC requests.
 
-UDP Behavior and ICMP Errors: When a client sends UDP packets to a port and the server cannot handle them (due to the port being closed, resource exhaustion, or other reasons), the server responds with an ICMP Destination unreachable (Port unreachable) message. This indicates that the UDP port is no longer able to process the incoming packets.
+4. **UDP Behavior and ICMP Errors**:
+   When a client sends UDP packets to a port and the server cannot handle them (due to the port being closed, resource exhaustion, or other reasons), the server responds with an ICMP **Destination unreachable (Port unreachable)** message. This indicates that the UDP port is no longer able to process the incoming packets.
 
-Why the ICMP Repeats: As the attack continues, the client keeps sending QUIC packets (Initial, Handshake, etc.), which hit the now-unresponsive port. The server responds with ICMP error messages for each packet it cannot handle, leading to the repeated pattern you observed.
+5. **Why the ICMP Repeats**:
+   As the attack continues, the client keeps sending QUIC packets (`Initial`, `Handshake`, etc.), which hit the now-unresponsive port. The server responds with ICMP error messages for each packet it cannot handle, leading to the repeated pattern you observed.
 
-In Summary:
+### In Summary:
 The ICMP packets you observed indicate that the HTTP/3 server has reached a state where it cannot process new QUIC sessions on the target port, likely due to resource exhaustion caused by the DoS attack. These packets are a signal of the attack's success in disrupting the server's ability to handle requests.
 
-Possible Next Steps:
-Verify Server Logs: Check the server logs to confirm resource exhaustion or port closure.
-Monitor UDP/QUIC Limits: Analyze if the server has rate-limiting or resource allocation issues for QUIC connections.
-Mitigation Techniques: Consider implementing rate limiting, connection validation, or resource allocation safeguards on the server to mitigate such attacks.
+### Possible Next Steps:
+- **Verify Server Logs**: Check the server logs to confirm resource exhaustion or port closure.
+- **Monitor UDP/QUIC Limits**: Analyze if the server has rate-limiting or resource allocation issues for QUIC connections.
+- **Mitigation Techniques**: Consider implementing rate limiting, connection validation, or resource allocation safeguards on the server to mitigate such attacks.
