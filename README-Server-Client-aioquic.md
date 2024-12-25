@@ -57,7 +57,3 @@ The **HTTP/3 Server** (`http3_server.py`) offers the following arguments and fea
 - Log and debug QUIC and TLS operations.
 - Dynamically negotiate protocols such as HTTP/0.9, HTTP/3, and WebTransport.
 - Utilize retry mechanisms for initial connection robustness.
-
----
-
-Both the client and server are highly configurable, supporting dynamic adjustments for QUIC/TLS parameters, logging, and advanced connection handling mechanisms. Let me know if you want deeper insights or modifications.
