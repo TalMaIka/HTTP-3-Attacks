@@ -26,8 +26,6 @@ from aioquic.quic.events import DatagramFrameReceived, ProtocolNegotiated, QuicE
 from aioquic.quic.logger import QuicFileLogger
 from aioquic.tls import SessionTicket
 
-ALLOWED_IP = "192.10.10.10"  # Example allowed IP for spoofing
-
 try:
     import uvloop
 except ImportError:
@@ -37,6 +35,7 @@ AsgiApplication = Callable
 HttpConnection = Union[H0Connection, H3Connection]
 
 SERVER_NAME = "aioquic/" + aioquic.__version__
+ALLOWED_IP = {"1.2.3.4"}  # Add your trusted IPs here
 
 
 class HttpRequestHandler:
@@ -329,7 +328,6 @@ class HttpServerProtocol(QuicConnectionProtocol):
         super().__init__(*args, **kwargs)
         self._handlers: Dict[int, Handler] = {}
         self._http: Optional[HttpConnection] = None
-        self._blocked = False
 
     def http_event_received(self, event: H3Event) -> None:
         if isinstance(event, HeadersReceived) and event.stream_id not in self._handlers:
@@ -358,6 +356,56 @@ class HttpServerProtocol(QuicConnectionProtocol):
                 path_bytes, query_string = raw_path, b""
             path = path_bytes.decode()
             self._quic._logger.info("HTTP request %s %s", method, path)
+            # determine the client IP address
+            try:
+                client_addr = self._http._quic._network_paths[0].addr
+                client_ip = client_addr[0]
+                # Normalize IPv6-mapped IPv4 addresses
+                if client_ip.startswith("::ffff:"):
+                    client_ip = client_ip.replace("::ffff:", "")
+            except Exception:
+                client_ip = None
+
+            print(f"Request path: {path} | Client IP: {client_ip}")  # DEBUG
+
+            if path.startswith("/admin") and client_ip not in ALLOWED_IP:
+                print(f"Blocked unauthorized /admin access from {client_ip}")  # DEBUG
+                self._http.send_headers(
+                    stream_id=event.stream_id,
+                    headers=[
+                        (b":status", b"403"),
+                        (b"server", SERVER_NAME.encode()),
+                        (b"content-type", b"text/plain"),
+                    ],
+                    end_stream=False,
+                )
+                self._http.send_data(
+                    stream_id=event.stream_id,
+                    data=b"Forbidden: admin only",
+                    end_stream=True,
+                )
+                return
+
+            # If there is a GET request with a path that starts with /admin and the IP is allowed, send back to the client a welcome message
+            if path.startswith("/admin") and client_ip in ALLOWED_IP and method == "GET":
+                print(f"Allowed /admin access from {client_ip}") #DEBUG
+                self._http.send_headers(
+                    stream_id=event.stream_id,
+                    headers=[
+                        (b":status", b"200"),
+                        (b"server", SERVER_NAME.encode()),
+                        (b"content-type", b"text/plain"),
+                    ],
+                    end_stream=False,
+                )
+                self._http.send_data(
+                    stream_id=event.stream_id,
+                    data=b"Welcome to the admin area!",
+                    end_stream=True,
+                )
+                return
+
+
 
             # FIXME: add a public API to retrieve peer address
             client_addr = self._http._quic._network_paths[0].addr
@@ -437,7 +485,9 @@ class HttpServerProtocol(QuicConnectionProtocol):
                     stream_id=event.stream_id,
                     transmit=self.transmit,
                 )
-            self._handlers[event.stream_id] = handler
+            if client_ip not in ALLOWED_IP:
+                # Log the request with the client IP
+                self._handlers[event.stream_id] = handler
             asyncio.ensure_future(handler.run_asgi(application))
         elif (
             isinstance(event, (DataReceived, HeadersReceived))
@@ -453,15 +503,6 @@ class HttpServerProtocol(QuicConnectionProtocol):
             handler.http_event_received(event)
 
     def quic_event_received(self, event: QuicEvent) -> None:
-         # IP filtering: block if not from allowed IP
-        if not self._blocked and hasattr(self._quic, "_network_paths"):
-            # _network_paths[0].addr = (ip, port)
-            client_ip = self._quic._network_paths[0].addr[0]
-            if client_ip != ALLOWED_IP:
-                print(f"Blocked connection from {client_ip}")
-                self._quic.close(error_code=0x100, reason_phrase="IP not allowed")
-                self._blocked = True
-                return
         if isinstance(event, ProtocolNegotiated):
             if event.alpn_protocol in H3_ALPN:
                 self._http = H3Connection(self._quic, enable_webtransport=True)
