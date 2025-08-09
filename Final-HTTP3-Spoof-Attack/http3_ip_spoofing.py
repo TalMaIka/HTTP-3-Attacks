@@ -1,3 +1,13 @@
+# ================================================================
+# QUIC IP-Spoofing Proof of Concept - Client & Attacker Script
+#
+# Created by Tal Malka (2025) for educational and research purposes.
+# Unauthorized use is strictly prohibited.
+#
+# This code is intended to demonstrate potential risks in QUIC (HTTP/3)
+# implementations. Run only in a controlled and authorized environment.
+# ================================================================
+
 import asyncio
 import contextlib
 import dataclasses
