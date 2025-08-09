@@ -17,10 +17,9 @@ Do not use it on networks or systems without explicit permission.
 ```
 
 .
-├── http3\_server.py           # QUIC HTTP/3 server
-├── http3\_ip\_spoofing.py      # Client & attacker POC script
+├── http3_server.py           # QUIC HTTP/3 server
+├── http3_ip_spoofing.py      # Client & attacker POC script
 ├── commands.txt              # Quick reference commands
-└── tests/
 ├── ssl\_cert.pem          # Self-signed TLS certificate
 └── ssl\_key.pem           # Private key for TLS
 
