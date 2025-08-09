@@ -1,3 +1,14 @@
+# ================================================================
+# QUIC HTTP/3 Server
+#
+# Based on aioquic (https://github.com/aiortc/aioquic)
+# Copyright (c) 2018-2020 aiortc authors
+# Licensed under the BSD 3-Clause License
+#
+# Modified for QUIC IP-Spoofing Proof of Concept
+# Modifications Copyright (c) 2025 Tal Malka and Yann Chich
+# ================================================================
+
 import argparse
 import asyncio
 import importlib
