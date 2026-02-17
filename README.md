@@ -24,7 +24,7 @@ This project shows how an attacker can exploit this mechanism by reusing a sessi
 ## Academic Paper
 
 The PDF version of the paper can be found here:
-[HTTP3_0RTT_Spoofing_Final.pdf](Final_Project.pdf)
+[HTTP3_0rtt_spoofing_paper.pdf](http3_0rtt_ip_spoofing_study.pdf)
 
 It includes:
 
